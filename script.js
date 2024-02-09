@@ -4,9 +4,12 @@ const itemInput = document.getElementById('item-input');
 const itemList = document.querySelector('ul');
 const clearBtn = document.getElementById('clear');
 const filterInput = document.querySelector('.filter');
+const formBtn = document.querySelector('button');
+const exitEditBtn = itemForm.querySelector('.exit-edit');
+let isEditMode = false;
 
 
-/***************Feature:Display Items from storage************************/
+/***************Utility functions************************/
 function getItemsFromStorage() {
   let itemsFromStorage;
 
@@ -38,6 +41,22 @@ function onAddItemSubmit(e) {
     return;
   }
 
+  // Check for edit mode
+  // remove old item from dom and storage first
+  if (isEditMode) {
+    const itemToEdit = itemList.querySelector('.edit-mode');
+    deleteItemFromStorage(itemToEdit.innerText);
+    itemToEdit.classList.remove('edit-mode');
+    deleteItemFromDOM(itemToEdit);
+
+    exitEditMode();
+  } else {
+    if (checkIfItemExists(newItem)) {
+      alert("Error: Item already exists");
+      return;
+    }
+  }
+
   // Create item DOM element
   addItemToDOM(newItem);
 
@@ -49,6 +68,7 @@ function onAddItemSubmit(e) {
 
   checkUI();
 }
+
 
 function addItemToDOM(item) {
   // create list item
@@ -89,18 +109,26 @@ function buildIcon(classes){
 
   return icon;
 }
-/***************Feature: Delete Items************************/
 
-function deteleItem(e) {
-  const item = e.target.parentElement.parentElement;
+/***************Feature: Prevent Duplicates************************/
+function checkIfItemExists(item) {
+  const itemsFromStorage = getItemsFromStorage();
   
-  if (e.target.parentElement.classList.contains('remove-item')) {
-    if(confirm('Are you sure?')){
-      deleteItemFromStorage(item.innerText);
-      deleteItemFromDOM(e.target.parentElement.parentElement);
+  for (let i of itemsFromStorage) {
+    if (i.toLowerCase() === item.toLowerCase()){
+      return true;
     }
   }
+  return false;
+}
 
+/***************Feature: Delete Items************************/
+
+function deleteItem(item) {
+  if(confirm('Are you sure?')){
+    deleteItemFromStorage(item.innerText);
+    deleteItemFromDOM(item);
+  }
   checkUI();
 }
 
@@ -120,12 +148,55 @@ function updateStorage(items){
   localStorage.setItem('items', items);
 }
 
+/***************Feature: Click Interactions ************************/
+function onClickItem(e){
+  if (e.target.parentElement.classList.contains('remove-item')) {
+    deleteItem(e.target.parentElement.parentElement);
+  } else if (e.target.tagName === 'LI') {
+    openEditMode(e.target);
+  } else {
+    exitEditMode();
+  }
+  checkUI();
+}
+
+
 /***************Feature: Clear items ************************/
 function clearItems() {
   while (itemList.firstElementChild != null){
     itemList.firstChild.remove();
   }
+  localStorage.clear();
+
   checkUI();
+}
+
+/***************Feature: Update Items ************************/
+function openEditMode(item) {
+  isEditMode = true;
+
+  itemList.querySelectorAll('li').forEach(i => i.classList.remove('edit-mode'));
+  //Set text input as text name for edit
+  itemInput.value = item.innerText;
+  item.classList.add('edit-mode');
+  itemInput.focus();
+
+  // change add item button to update button
+  formBtn.style.backgroundColor = 'green';
+  formBtn.innerHTML = '<i class="fa-solid fa-pen"></i> Update Item';
+  // show exit edit button
+  exitEditBtn.classList.remove('inactive');
+}
+
+
+function exitEditMode(){
+  isEditMode = false;
+
+  itemList.querySelectorAll('li').forEach(i => i.classList.remove('edit-mode'));
+  formBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Item';
+  formBtn.style.backgroundColor = '#333';
+  
+  exitEditBtn.classList.add('inactive');
 }
 
 /*************** Feature: remove unecessary UI **************/
@@ -174,7 +245,8 @@ function filterItem(e) {
 
   // check if no item is found
   // display placeholder if item isnt found
-  const placeholder = itemList.querySelector('.not-found');
+  const placeholder = document.querySelector('.not-found');
+
   if (checkNotFound(items)) {
     placeholder.classList.remove('inactive');
   } else {
@@ -186,13 +258,12 @@ function filterItem(e) {
 function init() {
   //Even Listeners
   itemForm.addEventListener('submit', onAddItemSubmit);
-  itemList.addEventListener('click', deteleItem);
+  itemList.addEventListener('click', onClickItem);
   clearBtn.addEventListener('click', clearItems);
   filterInput.addEventListener('input', filterItem);
-
   // get items from storage and display it when the DOM is loaded
   document.addEventListener('DOMContentLoaded', displayItems);
-  
+  exitEditBtn.addEventListener('click', exitEditMode);
   // hide clear all button and filter items input if there are no it
   checkUI();
 }

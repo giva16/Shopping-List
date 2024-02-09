@@ -34,9 +34,11 @@
           <button type="submit" class="btn">
             <i class="fa-solid fa-plus"></i> Add Item
           </button>
+          <button class="btn exit-edit inactive">
+            <i class="fa-solid fa-xmark"></i> Exit Edit Mode
+          </button>
         </div>
       </form>
-
       <div class="filter">
         <input
           type="text"
@@ -45,7 +47,7 @@
           placeholder="Filter Items"
         />
       </div>
-
+      <p class="inactive not-found">No items found</p>
       <ul id="item-list" class="items">
       </ul>
 
